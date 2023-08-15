@@ -7,46 +7,42 @@ module CamaleonCms
 
     default_scope { where(taxonomy: :site).reorder(term_group: :desc) }
 
-    has_many :post_types, class_name: 'CamaleonCms::PostType', foreign_key: :parent_id, dependent: :destroy
-    has_many :nav_menus, class_name: 'CamaleonCms::NavMenu', foreign_key: :parent_id, dependent: :destroy,
-                         inverse_of: :site
-    has_many :nav_menu_items, class_name: 'CamaleonCms::NavMenuItem', foreign_key: :term_group
-    has_many :widgets, class_name: 'CamaleonCms::Widget::Main', foreign_key: :parent_id, dependent: :destroy
-    has_many :sidebars, class_name: 'CamaleonCms::Widget::Sidebar', foreign_key: :parent_id, dependent: :destroy
-    has_many :user_roles_rel, class_name: 'CamaleonCms::UserRole', foreign_key: :parent_id, dependent: :destroy
-    has_many :custom_field_groups, class_name: 'CamaleonCms::CustomFieldGroup', foreign_key: :parent_id,
-                                   dependent: :destroy
-    has_many :term_taxonomies, class_name: 'CamaleonCms::TermTaxonomy', foreign_key: :parent_id
+    cama_define_common_relationships('Site')
+    has_many :post_types, class_name: "CamaleonCms::PostType", foreign_key: :parent_id, dependent: :destroy
+    has_many :nav_menus, class_name: "CamaleonCms::NavMenu", foreign_key: :parent_id, dependent: :destroy, inverse_of: :site
+    has_many :nav_menu_items, class_name: "CamaleonCms::NavMenuItem", foreign_key: :term_group
+    has_many :widgets, class_name: "CamaleonCms::Widget::Main", foreign_key: :parent_id, dependent: :destroy
+    has_many :sidebars, class_name: "CamaleonCms::Widget::Sidebar", foreign_key: :parent_id, dependent: :destroy
+    has_many :user_roles_rel, class_name: "CamaleonCms::UserRole", foreign_key: :parent_id, dependent: :destroy
+    has_many :custom_field_groups, class_name: "CamaleonCms::CustomFieldGroup", foreign_key: :parent_id, dependent: :destroy
+    has_many :term_taxonomies, class_name: "CamaleonCms::TermTaxonomy", foreign_key: :parent_id
 
     has_many :posts, through: :post_types, source: :posts
-    has_many :plugins, class_name: 'CamaleonCms::Plugin', foreign_key: :parent_id, dependent: :destroy
-    has_many :themes, class_name: 'CamaleonCms::Theme', foreign_key: :parent_id, dependent: :destroy
-    has_many :public_media, -> { where(is_public: true) },
-             class_name: 'CamaleonCms::Media', foreign_key: :site_id, dependent: :destroy
-    has_many :private_media, -> { where(is_public: false) },
-             class_name: 'CamaleonCms::Media', foreign_key: :site_id, dependent: :destroy
+    has_many :plugins, class_name: "CamaleonCms::Plugin", foreign_key: :parent_id, dependent: :destroy
+    has_many :themes, class_name: "CamaleonCms::Theme", foreign_key: :parent_id, dependent: :destroy
+    has_many :public_media, ->{ where(is_public: true) }, class_name: 'CamaleonCms::Media', foreign_key: :site_id, dependent: :destroy
+    has_many :private_media, ->{ where(is_public: false) }, class_name: 'CamaleonCms::Media', foreign_key: :site_id, dependent: :destroy
 
     after_create :default_settings
     after_create :set_default_user_roles
-    after_save :refresh_routes, if: proc { |obj| obj.saved_change_to_attribute?(:slug) }
-
+    after_save :update_routes
     before_destroy :destroy_site
-    after_destroy :refresh_routes
+    after_destroy :reload_routes
 
     validates_uniqueness_of :slug, scope: :taxonomy
 
     # all user roles for this site
     def user_roles
-      if PluginRoutes.system_info['users_share_sites']
+      if PluginRoutes.system_info["users_share_sites"]
         CamaleonCms::Site.main_site.user_roles_rel
       else
         user_roles_rel
       end
     end
 
-    # select full_categories for the site, include all children categories
+    #select full_categories for the site, include all children categories
     def full_categories
-      CamaleonCms::Category.where(site_id: id)
+      CamaleonCms::Category.where(site_id: self.id)
     end
 
     # all post_tags for this site
@@ -64,28 +60,24 @@ module CamaleonCms
     def get_languages
       return @_languages if defined?(@_languages)
 
-      l = get_meta('languages_site', [I18n.default_locale])
-      @_languages = begin
-        l.map(&:to_sym)
-      rescue StandardError
-        [I18n.default_locale.to_sym]
-      end
+      l = get_meta("languages_site", [I18n.default_locale])
+      @_languages = l.map { |x| x.to_sym } rescue [I18n.default_locale.to_sym]
     end
 
     # return current admin language configured for this site
     def get_admin_language
-      options[:_admin_theme] || 'en'
+      options[:_admin_theme] || "en"
     end
 
     # set current admin language for this site
     def set_admin_language(language)
-      set_option('_admin_theme', language)
+      set_option("_admin_theme", language)
     end
 
     # return current theme slug configured for this site
     # if theme was not configured, then return system.json defined
     def get_theme_slug
-      options[:_theme] || PluginRoutes.system_info['default_template']
+      options[:_theme] || PluginRoutes.system_info["default_template"]
     end
 
     # return theme model with slug theme_slug for this site
@@ -106,17 +98,17 @@ module CamaleonCms
 
     # items per page to be listed on frontend
     def front_per_page
-      get_option('front_per_page', 10)
+      get_option("front_per_page", 10)
     end
 
     # items per page to be listed on admin panel
     def admin_per_page
-      get_option('admin_per_page', 10)
+      get_option("admin_per_page", 10)
     end
 
     # frontend comments status for new comments on frontend
     def front_comment_status
-      get_option('comment_status', 'pending')
+      get_option("comment_status", "pending")
     end
 
     # security: user register form show captcha?
@@ -143,27 +135,26 @@ module CamaleonCms
     def main_site?
       self.class.main_site == self
     end
-    alias is_default? main_site?
+    alias_method :is_default?, :main_site?
 
     # list all users of current site
     def users
-      if PluginRoutes.system_info['users_share_sites']
+      if PluginRoutes.system_info["users_share_sites"]
         CamaleonCms::User.all
       else
         CamaleonCms::User.where(site_id: id)
       end
     end
-    alias users_include_admins users
+    alias_method :users_include_admins, :users
 
     # return upload directory for this site (deprecated for cloud support)
     def upload_directory(inner_directory = nil)
-      File.join(Rails.public_path, "/media/#{PluginRoutes.static_system_info['media_slug_folder'] ? slug : id}",
-                inner_directory.to_s)
+      File.join(Rails.public_path, "/media/#{PluginRoutes.static_system_info["media_slug_folder"] ? slug : id}", inner_directory.to_s)
     end
 
     # return the directory name where to upload file for this site
     def upload_directory_name
-      (PluginRoutes.static_system_info['media_slug_folder'] ? slug : id).to_s
+      "#{PluginRoutes.static_system_info["media_slug_folder"] ? slug : id}"
     end
 
     # return an available slug for a new post
@@ -171,7 +162,7 @@ module CamaleonCms
     # post_id: (integer, optional) current post id
     # sample: ("<!--:es-->features-1<!--:--><!--:en-->caract-1<!--:-->") | ("features")
     # return: (String) available slugs
-    def get_valid_post_slug(slug, post_id = nil)
+    def get_valid_post_slug(slug, post_id=nil)
       slugs = slug.translations
       if slugs.present?
         slugs.each do |k, v|
@@ -181,7 +172,7 @@ module CamaleonCms
       else
         res = slug
         (1..9999).each do |i|
-          p = posts.find_by_slug(res)
+          p = self.posts.find_by_slug(res)
           break if !p.present? || (p.present? && p.id == post_id)
 
           res = "#{slug}-#{i}"
@@ -211,8 +202,7 @@ module CamaleonCms
       user = users.where(username: 'anonymous').first
       unless user.present?
         pass = "anonymous#{rand(9999)}"
-        user = users.create({ email: 'anonymous_user@local.com', username: 'anonymous', password: pass,
-                              password_confirmation: pass, first_name: 'Anonymous' })
+        user = users.create({email: 'anonymous_user@local.com', username: 'anonymous', password: pass, password_confirmation: pass, first_name: 'Anonymous'})
       end
       user
     end
@@ -221,31 +211,32 @@ module CamaleonCms
     # sample: mysite.com | sample.mysite.com
     # also, you can define custom domain for this site by: my_site.site_domain = 'my_site.com' # used for sites with different domains to call from console or task
     def get_domain
-      @site_domain || (if main_site?
-                         slug
-                       else
-                         (slug.include?('.') ? slug : "#{slug}.#{Cama::Site.main_site.slug}")
-                       end)
+      @site_domain || (main_site? ? slug : (slug.include?(".") ? slug : "#{slug}.#{Cama::Site.main_site.slug}"))
     end
 
     private
-
     # destroy all things before site destroy
     def destroy_site
-      CamaleonCms::User.where(site_id: id).destroy_all unless PluginRoutes.system_info['users_share_sites']
-      FileUtils.rm_rf(File.join(Rails.public_path, "/media/#{upload_directory_name}")) # destroy current media directory
-      users.destroy_all unless PluginRoutes.system_info['users_share_sites'] # destroy all users assigned fot this site
+      unless PluginRoutes.system_info["users_share_sites"]
+        CamaleonCms::User.where(site_id: id).destroy_all
+      end
+      FileUtils.rm_rf(File.join(Rails.public_path, "/media/#{upload_directory_name}").to_s) # destroy current media directory
+      users.destroy_all unless PluginRoutes.system_info["users_share_sites"] # destroy all users assigned fot this site
     end
 
     # assign all users to this new site
     # DEPRECATED
     def set_all_users
-      nil
+      return
     end
 
     # update all routes of the system
     # reload system routes for this site
-    def refresh_routes
+    def update_routes
+      PluginRoutes.reload if cama_attr_changed?(:slug)
+    end
+
+    def reload_routes
       PluginRoutes.reload
     end
 

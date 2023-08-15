@@ -99,18 +99,18 @@ http://camaleon.tuzitio.com/store/plugins
 * eFashion - http://camaleon.tuzitio.com/store/themes/eFashion (Github: https://github.com/mazharoddin/camaleon-cms-efashion)
 * Shoppy - http://camaleon.tuzitio.com/store/themes/shoppy (Github: https://github.com/mazharoddin/camaleon-cms-shoppy)
 * CV - Paid Theme ($) - http://camaleon.tuzitio.com/store/themes/cv
-* Camaleon Site - Paid Theme ($) - http://camaleon.tuzitio.com/store/themes/camaleon_cms
+* Camaleon Site - Paid Them ($) - http://camaleon.tuzitio.com/store/themes/camaleon_cms
 * Sky - Paid Theme ($) - http://camaleon.tuzitio.com/store/themes/sky
 
 
 ## Requirements
-* Rails 6.0+
+* Rails 5.2+
 * PostgreSQL, MySQL 5+ or SQlite
-* Ruby 2.7+
+* Ruby 2.6+
 * Imagemagick
 
 ## Installation
-* Install Ruby on Rails (Docker containerized guide [here](https://github.com/owen2345/rails_app_containerization))
+* Install Ruby on Rails
 * Create your rails project
 
   ```bash
@@ -123,14 +123,6 @@ http://camaleon.tuzitio.com/store/plugins
   # OR
   # gem "camaleon_cms", github: 'owen2345/camaleon-cms' # latest development version
   ```
-  
-* Add initializer `config/initializers/sprockets_fix.rb` to fix "Bug Segmentation fault" (Only Ruby 3+ - [sprokets issue](https://github.com/rails/sprockets/issues/633#issuecomment-774762509))
-```ruby
-  Rails.application.config.assets.configure do |env|
-    env.export_concurrent = false
-  end
-```
-
 
 * Install required Gem and dependencies
 

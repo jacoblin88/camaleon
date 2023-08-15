@@ -1,17 +1,7 @@
-if begin
-  CamaleonCms::Site.any?
-rescue StandardError
-  false
-end
+if(CamaleonCms::Site.any? rescue false)
   CamaleonCms::Site.all.each do |site|
-    site.set_option('refresh_cache', true)
+    site.set_option("refresh_cache", true)
   end
 end
 
-module Plugins
-  module FrontCache
-    module Config
-      class Initializer; end
-    end
-  end
-end
+class Plugins::FrontCache::Config::Initializer; end

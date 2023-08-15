@@ -1,14 +1,14 @@
 module CamaleonCms
-  class Media < CamaleonRecord
+  class Media < ActiveRecord::Base
     self.table_name = "#{PluginRoutes.static_system_info['db_prefix']}media"
 
     belongs_to :site, required: false
     validates :name, uniqueness: {
-      scope: %i[site_id is_folder folder_path is_public],
+      scope: [:site_id, :is_folder, :folder_path, :is_public],
       message: 'Duplicates not allowed'
     }
-    scope :only_folder, -> { where(is_folder: true) }
-    scope :only_file, -> { where(is_folder: false) }
+    scope :only_folder, ->{ where(is_folder: true) }
+    scope :only_file, ->{ where(is_folder: false) }
     default_scope { order(is_folder: :asc, name: :asc) }
 
     before_save :create_parent_folders
@@ -39,17 +39,13 @@ module CamaleonCms
     end
 
     private
-
     # recover folder or file format
     def create_parent_folders
       coll = is_public ? site.public_media : site.private_media
       _p = []
       folder_path.split('/').each do |f_name|
-        _path = "/#{_p.join('/')}".cama_fix_media_key
-        if "#{_path}/#{f_name}".cama_fix_media_key != '/'
-          coll.only_folder.where(name: f_name,
-                                 folder_path: _path).first_or_create
-        end
+        _path = ('/'+_p.join('/')).cama_fix_media_key
+        coll.only_folder.where(name: f_name, folder_path: _path).first_or_create if "#{_path}/#{f_name}".cama_fix_media_key != '/'
         _p.push(f_name)
       end
     end

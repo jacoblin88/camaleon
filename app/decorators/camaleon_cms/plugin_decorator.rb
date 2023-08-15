@@ -1,5 +1,3 @@
-module CamaleonCms
-  class PluginDecorator < CamaleonCms::TermTaxonomyDecorator
-    delegate_all
-  end
+class CamaleonCms::PluginDecorator < CamaleonCms::TermTaxonomyDecorator
+  delegate_all
 end

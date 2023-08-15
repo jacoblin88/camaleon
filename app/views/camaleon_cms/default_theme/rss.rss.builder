@@ -1,12 +1,12 @@
-xml.instruct! :xml, version: '1.0'
-xml.rss version: '2.0' do
+xml.instruct! :xml, :version => "1.0"
+xml.rss :version => "2.0" do
   xml.channel do
     xml.title current_site.the_title
     xml.description current_site.the_excerpt
     xml.link current_site.the_url
 
-    current_site.the_contents.paginate(page: params[:page],
-                                       per_page: current_site.front_per_page).decorate.each do |post|
+
+    for post in current_site.the_contents.paginate(:page => params[:page], :per_page => current_site.front_per_page).decorate
       xml.item do
         xml.title post.the_title
         xml.description post.the_excerpt

@@ -1,5 +1,5 @@
 module CamaleonCms
-  class CustomFieldsRelationship < CamaleonRecord
+  class CustomFieldsRelationship < ActiveRecord::Base
     self.table_name = "#{PluginRoutes.static_system_info['db_prefix']}custom_fields_relationships"
 
     # attr_accessible :objectid, :custom_field_id, :term_order, :value, :object_class,
@@ -23,9 +23,7 @@ module CamaleonCms
 
     # touch owner model
     def update_model_owner
-      "CamaleonCms::#{object_class}".constantize.find(objectid).touch
-    rescue StandardError
-      nil
+      "CamaleonCms::#{object_class}".constantize.find(objectid).touch rescue nil # owner model
     end
   end
 end

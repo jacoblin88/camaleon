@@ -1,4 +1,5 @@
 class String
+
   # return translation value of locale
   # if locale is nil, it will use I18n.locale
 
@@ -22,11 +23,10 @@ class String
   def translate(locale = nil)
     locale ||= I18n.locale
     locale = locale.to_sym
-    return self if !squish.starts_with?('<!--') || blank?
-    return translations[locale] if translations.key?(locale)
-    return translations[I18n.default_locale] if translations.key?(I18n.default_locale)
+    return self if !self.squish.starts_with?("<!--") or self.blank?
+    return translations[locale] if translations.has_key?(locale)
+    return translations[I18n.default_locale] if translations.has_key?(I18n.default_locale)
     return '' if translations.keys.any?
-
     self
   end
 
@@ -34,24 +34,24 @@ class String
   # sample: {es: "hola mundo", en: "Hello World"}
   def translations
     @translations ||= split_locales
+    @translations
   end
 
-  # return array of translations for this string
+  # return aray of translations for this string
   # sample: ["hola mundo", "Hello World"]
   def translations_array
-    r = translations.map { |_key, value| value }
-    r.present? ? r : [self]
+    r = translations.map{|key, value| value}
+    return r.present? ? r : [self]
   end
 
   protected
-
   def split_locales
     translations_per_locale = {}
-    return translations_per_locale if !squish.starts_with?('<!--') || blank?
+    return translations_per_locale if !self.squish.starts_with?("<!--") or self.blank?
 
-    split('<!--:-->').each do |t|
+    self.split('<!--:-->').each do |t|
       t.match(/^<!--:([\w||-]{2,5})/) do |lang|
-        lt = lang[1].sub('--', '')
+        lt = lang[1].sub("--", "")
         translations_per_locale[lt.to_sym] = t.gsub(/<!--:#{lt}-->(.*)/, '\1')
       end
     end
@@ -59,16 +59,17 @@ class String
   end
 end
 
+
 class Hash
   # convert hash to translation string structure
   # sample: {es: "hola mundo", en: "Hello World"}
   # ==> <!--:es-->Hola Mundo<!--:--><!--:en-->Hello World<!--:-->
   def to_translate
     res = []
-    each do |key, val|
+    self.each do|key, val|
       res << "<!--:#{key}-->#{val}<!--:-->"
     end
-    res.join('')
+    res.join("")
   end
 end
 
@@ -76,7 +77,7 @@ class Array
   # translate array values
   # return the same array translated
   def translate(locale = nil)
-    collect do |val|
+    self.collect do |val|
       val.to_s.translate(locale)
     end
   end

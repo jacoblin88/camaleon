@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 describe 'the Site Settings SideBar options', js: true do
@@ -37,7 +39,7 @@ describe 'the Site Settings SideBar options', js: true do
       visit "#{cama_root_relative_path}/admin/settings/theme"
 
       expect(page).to have_content('Footer message')
-      expect(webfont_icon_fetch_status('fa fa-cog', 'fontawesome-webfont', 'woff2')).to be(200)
+      expect(webfont_icon_fetch_status('fa fa-cog', 'fontawesome-webfont', 'woff2')).to eql(200)
 
       within '#theme_settings_form' do
         within '.mce-edit-area' do
